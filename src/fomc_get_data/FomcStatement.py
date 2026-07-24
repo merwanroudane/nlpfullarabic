@@ -67,10 +67,24 @@ class FomcStatement(FomcBase):
 
         if self.verbose: print("{} links found in the current page.".format(len(self.links)))
 
-        # المؤرشَف قبل 2015 — Archived before 2015
-        if from_year <= 2014:
+        # أوّل سنة تغطّيها الصفحة الحالية، تُستنتَج من الروابط لا تُفترَض ثابتة.
+        # الصفحة الحالية كانت تبدأ من 2015 عند كتابة الشيفرة الأصلية، وصارت تبدأ من
+        # 2021، فأيّ حدّ ثابت يُسقط السنوات الواقعة بين الأرشيف والصفحة الحالية.
+        #
+        # The first year the live page covers, inferred from the links rather than
+        # assumed. The live page began at 2015 when the original code was written and now
+        # begins at 2021, so any hard-coded bound silently drops the years that fall
+        # between the archive and the live page.
+        years_on_page = [d.year for d in self.dates]
+        archive_until = min(years_on_page) if years_on_page else 2015
+        if self.verbose:
+            print("Live page covers {} onwards; archive pages will cover {}..{}.".format(
+                archive_until, from_year, archive_until - 1))
+
+        # الصفحات المؤرشَفة — the archived pages
+        if from_year < archive_until:
             print("Getting links from archive pages...")
-            for year in range(from_year, 2015):
+            for year in range(from_year, archive_until):
                 yearly_contents = []
                 fomc_yearly_url = self.base_url + '/monetarypolicy/fomchistorical' + str(year) + '.htm'
                 r_year = requests.get(fomc_yearly_url)

@@ -67,6 +67,82 @@ _VOWELS = "aeiouy"
 # أدوات مساعدة — helpers
 # ======================================================================
 
+#: عبارات ترويسة موقع الاحتياطي الفدرالي التي يسحبها الزاحف مع المحتوى
+#: Federal Reserve website banner phrases the scraper picks up along with the content
+_BANNER_PHRASES = (
+    "an official website of the united states government",
+    "official websites use .gov",
+    "secure .gov websites use https",
+    "the federal reserve, the central bank of the united states, provides",
+    "share sensitive information only on official, secure websites",
+)
+
+
+def clean_fed_page(text, min_words=40, marker="[SECTION]"):
+    """تنقية نصّ صفحة الاحتياطي الفدرالي من قائمة التنقّل وترويسة الموقع.
+
+    Strip the Federal Reserve site navigation and banner from a scraped page.
+
+    المشكلة — the problem
+    ---------------------
+    يسحب الزاحف الصفحة كاملةً، فتدخل معها ترويسة «An official website of the United
+    States Government» وقائمة تنقّل الموقع بأكملها. وهذه تُفسد كل مقاييس النصّ: فهي
+    تضخّم عدد الكلمات، وتُقصّر متوسط طول الجملة لأنّها عناوين لا جُمل، فتُظهر البيان
+    أسهل قراءةً مما هو عليه.
+
+    The scraper captures the whole page, so the "An official website of the United States
+    Government" banner and the entire site navigation come with it. This corrupts every
+    text metric: it inflates the word count and shortens the average sentence length,
+    because navigation items are labels rather than sentences, making the statement look
+    easier to read than it is.
+
+    المعيار — the criterion
+    -----------------------
+    تُحتفظ الكتل الطويلة فقط: فقرات البيان الحقيقية تتجاوز عادةً 40 كلمة، أمّا عناوين
+    التنقّل فكلمات معدودة. معيارٌ متينٌ لا يعتمد على أسماء الأقسام التي تتغيّر مع
+    تحديثات الموقع.
+
+    Only long blocks are kept: real statement paragraphs usually exceed 40 words, whereas
+    navigation labels are a handful of words. A robust criterion that does not depend on
+    section names, which change whenever the site is redesigned.
+    """
+    if text is None or (not isinstance(text, str) and pd.isna(text)):
+        return ""
+    raw = str(text)
+    blocks = raw.split(marker) if marker in raw else [raw]
+
+    kept = []
+    for block in blocks:
+        stripped = block.strip()
+        if not stripped:
+            continue
+        low = stripped.lower()
+        if any(phrase in low for phrase in _BANNER_PHRASES):
+            continue
+        if len(re.findall(r"[a-zA-Z']+", stripped)) < min_words:
+            continue
+        kept.append(stripped)
+
+    return "\n\n".join(kept)
+
+
+def clean_frame(df, text_col="contents", out_col="text", min_words=40):
+    """تنقية عمود نصّي كامل وإضافة عمود منقّى، مع تقرير عن الأثر.
+
+    Clean a whole text column into a new column, reporting the effect.
+    """
+    out = df.copy()
+    out[out_col] = out[text_col].apply(lambda t: clean_fed_page(t, min_words=min_words))
+    before = out[text_col].apply(lambda t: len(re.findall(r"[a-zA-Z']+", str(t))))
+    after = out[out_col].apply(lambda t: len(re.findall(r"[a-zA-Z']+", t)))
+    print(f"متوسط الكلمات قبل التنقية: {before.mean():.0f} | بعدها: {after.mean():.0f} "
+          f"| المحذوف: {100 * (1 - after.mean() / max(before.mean(), 1)):.1f}%")
+    empty = int((after == 0).sum())
+    if empty:
+        print(f"تنبيه: {empty} وثيقة صارت فارغة بعد التنقية — documents emptied by cleaning")
+    return out
+
+
 def _sentences(text):
     """تقسيم النصّ إلى جُمل بفاصل بسيط لا يحتاج تنزيل بيانات إضافية.
 

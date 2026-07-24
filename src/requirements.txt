@@ -9,6 +9,11 @@ requests>=2.32.0
 bs4>=0.0.2
 lxml>=5.0.0
 tqdm>=4.67.0
+# لازم لاستخراج نصّ النصوص الحرفية للاجتماعات والمؤتمرات الصحفية من ملفّات pdf.
+# بدونه تفشل حزمة fomc_get_data في الاستيراد كلّها، لا وحدات pdf وحدها.
+# Required to extract text from the meeting and press-conference transcript PDFs.
+# Without it the whole fomc_get_data package fails to import, not just the PDF modules.
+textract>=2.0.0
 
 # ---- الرسم — plotting ----
 matplotlib>=3.9.0

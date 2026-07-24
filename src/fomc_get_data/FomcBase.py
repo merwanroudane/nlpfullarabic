@@ -192,5 +192,10 @@ class FomcBase(metaclass=ABCMeta):
             tmp_dates.append(cur_date)
             if self.verbose: print("Writing to ", filepath)
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            with open(filepath, "w") as output_file:
+            # الترميز صريح: بلا تحديده يستخدم ويندوز cp1252 فيفشل عند أول محرف
+            # غير لاتيني مثل الشرطة الطويلة أو علامات التنصيص المنحنية في نصوص الفد.
+            # An explicit encoding: without it Windows defaults to cp1252 and fails on
+            # the first non-Latin-1 character, such as the em dash or curly quotes that
+            # appear in Fed texts.
+            with open(filepath, "w", encoding="utf-8", newline="\n") as output_file:
                 output_file.write(row[target])
