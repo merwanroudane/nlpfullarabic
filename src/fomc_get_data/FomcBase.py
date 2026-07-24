@@ -51,11 +51,16 @@ class FomcBase(metaclass=ABCMeta):
         self.calendar_url = self.base_url + '/monetarypolicy/fomccalendars.htm'
 
         # قائمة رؤساء مجلس الاحتياطي الفدرالي — FOMC Chairperson's list
+        #
+        # ⚠️ يجب تحديث هذا الجدول عند تغيّر رئاسة المجلس. اتركْ ToDate فارغًا ("")
+        #    للرئيس الحالي الذي لا يزال في منصبه، فتُنسَب إليه كل الوثائق اللاحقة.
+        #    Update this table when the chair changes. Leave ToDate empty ("") for the
+        #    incumbent so that all later documents are attributed to them.
         self.chair = pd.DataFrame(
             data=[["Greenspan", "Alan", "1987-08-11", "2006-01-31"],
                   ["Bernanke", "Ben", "2006-02-01", "2014-01-31"],
                   ["Yellen", "Janet", "2014-02-03", "2018-02-03"],
-                  ["Powell", "Jerome", "2018-02-05", "2026-05-15"]],
+                  ["Powell", "Jerome", "2018-02-05", ""]],
             columns=["Surname", "FirstName", "FromDate", "ToDate"])
 
     def _date_from_link(self, link):
@@ -67,16 +72,18 @@ class FomcBase(metaclass=ABCMeta):
         return date
 
     def _speaker_from_date(self, article_date):
-        if self.chair.FromDate[0] < article_date and article_date < self.chair.ToDate[0]:
-            speaker = self.chair.FirstName[0] + " " + self.chair.Surname[0]
-        elif self.chair.FromDate[1] < article_date and article_date < self.chair.ToDate[1]:
-            speaker = self.chair.FirstName[1] + " " + self.chair.Surname[1]
-        elif self.chair.FromDate[2] < article_date and article_date < self.chair.ToDate[2]:
-            speaker = self.chair.FirstName[2] + " " + self.chair.Surname[2]
-        elif self.chair.FromDate[3] < article_date and article_date < self.chair.ToDate[3]:
-            speaker = self.chair.FirstName[3] + " " + self.chair.Surname[3]
-        else:
-            speaker = "other"
+        # البحث في الجدول عن الرئيس الذي يشمل تاريخُ ولايته تاريخَ الوثيقة.
+        # ToDate الفارغ يعني أنّ الرئيس لا يزال في منصبه، فلا حدّ أعلى لولايته.
+        # Look up the chair whose term covers the article date; an empty ToDate means
+        # the incumbent, so the term has no upper bound.
+        speaker = "other"
+        for _, row in self.chair.iterrows():
+            if article_date < row["FromDate"]:
+                continue
+            if row["ToDate"] and article_date > row["ToDate"]:
+                continue
+            speaker = row["FirstName"] + " " + row["Surname"]
+            break
         return speaker
 
     @abstractmethod

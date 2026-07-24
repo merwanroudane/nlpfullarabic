@@ -51,9 +51,12 @@ if __name__ == '__main__':
         print("Please specify the first argument from ", content_type_all)
         sys.exit(1)
 
-    if (from_year < 1980) or (from_year > 2020):
+    # الحدّ الأعلى هو السنة الجارية، فلا يتعطّل البرنامج مع تقدّم الزمن
+    # The upper bound is the current year, so the script does not go stale
+    current_year = date.today().year
+    if (from_year < 1980) or (from_year > current_year):
         print("Usage: ", pg_name)
-        print("Please specify the second argument between 1980 and 2020")
+        print("Please specify the second argument between 1980 and", current_year)
         sys.exit(1)
 
     if content_type == 'all':

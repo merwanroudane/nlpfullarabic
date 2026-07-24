@@ -8,7 +8,7 @@ Builds the FOMC meeting calendar by scraping the official website.
 المستودع / Repository: https://github.com/merwanroudane/nlpfullarabic
 """
 
-from datetime import datetime
+from datetime import datetime, date
 import os
 import sys
 import pickle
@@ -63,9 +63,16 @@ if __name__ == '__main__':
     date_list = []
     pg_name = sys.argv[0]
 
+    # الحدّ الأعلى هو السنة الجارية؛ فالصفحة الحالية تغطّي السنوات الأخيرة تلقائيًّا،
+    # وحلقة الأرشيف أدناه تُفرَغ من تلقاء نفسها إذا كانت السنة 2015 أو بعدها.
+    # The upper bound is the current year: the live page covers recent years, and the
+    # archive loop below is naturally empty when from_year is 2015 or later.
+    current_year = date.today().year
+    usage_msg = "Please specify the first argument between 1936 and {}".format(current_year)
+
     if len(sys.argv) != 2:
         print("Usage: ", pg_name)
-        print("Please specify the first argument between 1936 and 2015")
+        print(usage_msg)
         sys.exit(1)
 
     from_year = sys.argv[1]
@@ -76,12 +83,12 @@ if __name__ == '__main__':
             from_year = int(from_year)
         else:
             print("Usage: ", pg_name)
-            print("Please specify the first argument between 1936 and 2015")
+            print(usage_msg)
             sys.exit(1)
 
-        if (from_year < 1936) or (from_year>2015):
+        if (from_year < 1936) or (from_year > current_year):
             print("Usage: ", pg_name)
-            print("Please specify the first argument between 1936 and 2015")
+            print(usage_msg)
             sys.exit(1)
     else:
         from_year = 1936
