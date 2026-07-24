@@ -1,0 +1,8 @@
+﻿# ضمان معالجة الملفات النصية بترميز UTF-8 ونهايات أسطر موحّدة
+# Ensure text files are treated as UTF-8 text with normalised line endings
+*.py    text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+*.cfg   text eol=lf
+*.ipynb text eol=lf
+*.png   binary
